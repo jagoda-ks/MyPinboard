@@ -117,8 +117,11 @@ class _StartingPageState extends State<StartingPage> {
                                       isMarked: isMarked,
                                       onTap: _isDeleting
                                           ? () => setState(() {
-                                                if (isMarked) _markedForDeletion.remove(text);
-                                                else _markedForDeletion.add(text);
+                                                if (isMarked) {
+                                                  _markedForDeletion.remove(text);
+                                                } else {
+                                                  _markedForDeletion.add(text);
+                                                }
                                               })
                                           : () {}, 
                                     );

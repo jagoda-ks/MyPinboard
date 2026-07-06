@@ -95,6 +95,6 @@ flutter:
   fonts:
       - family: CustomFont  # This is the name you will use in your code
         fonts:
-          - asset: assets/fonts/CustomFont-Regular.ttf
-          - asset: assets/fonts/CustomFont-Bold.ttf
+          - asset: assets/fonts/AmaticSC-Regular.ttf
+          - asset: assets/fonts/AmaticSC-Bold.ttf
             weight: 700

@@ -12,7 +12,7 @@ class StickyNoteButton extends StatelessWidget {
     required this.text,
     required this.isMarked,
     required this.onTap,
-    this.width = 120.0,
+    this.width = 200.0,
   });
 
   @override
