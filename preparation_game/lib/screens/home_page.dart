@@ -31,7 +31,7 @@ class _HomePageState extends State<HomePage> {
     return Container(
       decoration: const BoxDecoration(
         image: DecorationImage(
-          image: AssetImage('assets/pinboard.png'), // Ensure this matches your file name
+          image: AssetImage('assets/images/pinboard.png'), // Ensure this matches your file name
           fit: BoxFit.cover, // Ensures the image fills the screen
         ),
       ),

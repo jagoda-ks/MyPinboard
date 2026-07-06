@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:preparation_game/UILib/input_field.dart';
+import 'package:preparation_game/UILib/sticky_note_button.dart';
+import 'package:preparation_game/UILib/delete_button.dart';
+import 'package:preparation_game/UILib/subject_menu.dart';
 
 class StartingPage extends StatefulWidget {
   final String challengeTitle;
 
-  const StartingPage({
-    super.key,
-    required this.challengeTitle,
-  });
+  const StartingPage({super.key, required this.challengeTitle});
 
   @override
   State<StartingPage> createState() => _StartingPageState();
@@ -15,14 +15,14 @@ class StartingPage extends StatefulWidget {
 
 class _StartingPageState extends State<StartingPage> {
   bool _showOptions = false;
-  bool _isEnteringSubject = false; // Renamed from _isEnteringComponent
+  bool _isEnteringSubject = false;
   bool _isDeleting = false;
 
-  final List<String> _subjects = []; // Renamed from _components
+  final List<String> _subjects = [];
   final List<String> _levels = [];
   final Set<String> _markedForDeletion = {};
 
-  late final TextEditingController _subjectInputController; // Renamed
+  late final TextEditingController _subjectInputController;
 
   @override
   void initState() {
@@ -36,7 +36,7 @@ class _StartingPageState extends State<StartingPage> {
     super.dispose();
   }
 
-  void _submitSubject(String value) { // Renamed
+  void _submitSubject(String value) {
     final cleanText = value.trim();
     if (cleanText.isNotEmpty) {
       setState(() {
@@ -48,14 +48,6 @@ class _StartingPageState extends State<StartingPage> {
     }
   }
 
-  void _performDeletion() {
-    setState(() {
-      _subjects.removeWhere((item) => _markedForDeletion.contains(item));
-      _markedForDeletion.clear();
-      _isDeleting = false;
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     final bool isLevelEnabled = _subjects.isNotEmpty;
@@ -63,7 +55,7 @@ class _StartingPageState extends State<StartingPage> {
     return Container(
       decoration: const BoxDecoration(
         image: DecorationImage(
-          image: AssetImage('assets/background.png'),
+          image: AssetImage('assets/images/pinboard.png'),
           fit: BoxFit.cover,
         ),
       ),
@@ -119,22 +111,16 @@ class _StartingPageState extends State<StartingPage> {
                                   runSpacing: 8,
                                   children: _subjects.map((text) {
                                     final isMarked = _markedForDeletion.contains(text);
-                                    return SizedBox(
+                                    return StickyNoteButton(
                                       key: ValueKey(text),
-                                      width: 120,
-                                      height: 70,
-                                      child: ElevatedButton(
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor: isMarked ? Colors.redAccent : null,
-                                        ),
-                                        onPressed: _isDeleting
-                                            ? () => setState(() {
+                                      text: text,
+                                      isMarked: isMarked,
+                                      onTap: _isDeleting
+                                          ? () => setState(() {
                                                 if (isMarked) _markedForDeletion.remove(text);
                                                 else _markedForDeletion.add(text);
                                               })
-                                            : () {}, // Normal action
-                                        child: Text(text, textAlign: TextAlign.center, style: const TextStyle(fontSize: 18)),
-                                      ),
+                                          : () {}, 
                                     );
                                   }).toList(),
                                 )
@@ -144,70 +130,35 @@ class _StartingPageState extends State<StartingPage> {
                 ),
               ),
             ),
+            
+            // Reusable Delete Button
             Positioned(
               bottom: 20,
               left: 20,
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 150),
-                decoration: BoxDecoration(
-                  color: _isDeleting ? Colors.red.shade800 : Colors.red,
-                  borderRadius: BorderRadius.circular(30),
-                  boxShadow: _isDeleting ? [const BoxShadow(color: Colors.black26, blurRadius: 10, offset: Offset(0, 4))] : [],
-                ),
-                child: ElevatedButton(
-                  onPressed: _subjects.isNotEmpty
-                      ? () => setState(() => _isDeleting = !_isDeleting)
-                      : null,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.transparent,
-                    shadowColor: Colors.transparent,
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(_isDeleting ? Icons.check : Icons.delete, color: Colors.white),
-                      const SizedBox(width: 8),
-                      Text(_isDeleting ? 'Finish Deleting' : 'Delete', style: const TextStyle(color: Colors.white)),
-                    ],
-                  ),
-                ),
+              child: DeleteButton(
+                isDeleting: _isDeleting,
+                enabled: _subjects.isNotEmpty,
+                onPressed: () => setState(() => _isDeleting = !_isDeleting),
               ),
             ),
+
+            // Reusable Menu
             Positioned(
               bottom: 20,
               right: 20,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  if (_showOptions) ...[
-                    ElevatedButton(
-                      onPressed: isLevelEnabled
-                          ? () => setState(() => _levels.add('Level ${_levels.length + 1}'))
-                          : null,
-                      style: ElevatedButton.styleFrom(backgroundColor: isLevelEnabled ? null : Colors.grey[300]),
-                      child: const Text('Level'),
-                    ),
-                    const SizedBox(height: 10),
-                    ElevatedButton(
-                      onPressed: () => setState(() => _isEnteringSubject = true),
-                      child: const Text('Subject'),
-                    ),
-                    const SizedBox(height: 10),
-                  ],
-                  FloatingActionButton.extended(
-                    onPressed: () => setState(() {
-                      _showOptions = !_showOptions;
-                      if (!_showOptions) {
-                        _isEnteringSubject = false;
-                        _isDeleting = false;
-                        _markedForDeletion.clear();
-                      }
-                    }),
-                    label: Text(_showOptions ? 'Hide' : 'Add'),
-                    icon: Icon(_showOptions ? Icons.close : Icons.add),
-                  ),
-                ],
+              child: SubjectMenu(
+                showOptions: _showOptions,
+                isLevelEnabled: isLevelEnabled,
+                onAddLevel: () => setState(() => _levels.add('Level ${_levels.length + 1}')),
+                onAddSubject: () => setState(() => _isEnteringSubject = true),
+                onToggleMenu: () => setState(() {
+                  _showOptions = !_showOptions;
+                  if (!_showOptions) {
+                    _isEnteringSubject = false;
+                    _isDeleting = false;
+                    _markedForDeletion.clear();
+                  }
+                }),
               ),
             ),
           ],
