@@ -11,7 +11,7 @@ class AppSettings {
   // The text style for your Sticky Note buttons
   static const TextStyle stickyNoteText = TextStyle(
     fontFamily: customFontFamily,
-    fontSize: 24,
+    fontSize: 24    ,
     color: Colors.black,
     fontWeight: FontWeight.bold,
     height: 1.1,
@@ -51,4 +51,7 @@ class AppSettings {
   static const double stickyNoteOriginalWidth = 856.0;
   static const double stickyNoteOriginalHeight = 830.0;
   static const double stickyNoteRatio = stickyNoteOriginalWidth / stickyNoteOriginalHeight;
+
+  // BACKGROUND
+  static const String pinboardBackground = 'assets/images/pinboard.png';
 }

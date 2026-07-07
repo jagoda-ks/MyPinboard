@@ -36,7 +36,7 @@ class SubjectMenu extends StatelessWidget {
         ],
         FloatingActionButton.extended(
           onPressed: onToggleMenu,
-          label: Text(showOptions ? 'Hide' : 'Add'),
+          label: Text('Add'),
           icon: Icon(showOptions ? Icons.close : Icons.add),
         ),
       ],

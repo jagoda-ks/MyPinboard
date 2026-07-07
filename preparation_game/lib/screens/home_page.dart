@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:preparation_game/UILib/background_widget.dart';
 import 'package:preparation_game/UILib/button_builder.dart';
 import 'package:preparation_game/UILib/input_field.dart';
 import 'starting_page.dart';
@@ -28,26 +29,17 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     // Wrap the Scaffold in a Container to set the background
-    return Container(
-      decoration: const BoxDecoration(
-        image: DecorationImage(
-          image: AssetImage('assets/images/pinboard.png'), // Ensure this matches your file name
-          fit: BoxFit.cover, // Ensures the image fills the screen
-        ),
-      ),
+    return BackgroundWidget(
       child: Scaffold(
         backgroundColor: Colors.transparent, // 1. Set to transparent
         appBar: AppBar(
-          title: const Text('Challenge App'),
+          title: const Text('Home'),
           backgroundColor: Colors.transparent, // 2. Make AppBar transparent
           elevation: 0, // Removes shadow to blend with the background
         ),
         body: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24.0),
-            child: Column(
+          child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 const Text(
                   'Enter the name of your challenge',
@@ -77,7 +69,6 @@ class _HomePageState extends State<HomePage> {
             ),
           ),
         ),
-      ),
-    );
+      );
   }
 }

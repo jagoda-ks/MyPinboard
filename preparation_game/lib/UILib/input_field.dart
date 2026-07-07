@@ -3,13 +3,13 @@ import 'package:flutter/material.dart';
 class InputField extends StatelessWidget {
   final TextEditingController controller;
   final String hintText;
-  final ValueChanged<String>? onSubmitted; // Added parameter
+  final ValueChanged<String>? onSubmitted;
 
   const InputField({
     super.key,
     required this.controller,
     this.hintText = 'Type here...',
-    this.onSubmitted, // Initialize here
+    this.onSubmitted,
   });
 
   @override
@@ -18,8 +18,9 @@ class InputField extends StatelessWidget {
       constraints: const BoxConstraints(maxWidth: 400),
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: TextField(
+        autofocus: true, // Added this to force focus and show the keyboard
         controller: controller,
-        onSubmitted: onSubmitted, // Hook it up here
+        onSubmitted: onSubmitted,
         decoration: InputDecoration(
           hintText: hintText,
           contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
