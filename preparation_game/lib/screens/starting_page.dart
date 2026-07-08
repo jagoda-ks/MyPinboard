@@ -4,7 +4,6 @@ import 'package:preparation_game/UILib/sticky_note_button.dart';
 import 'package:preparation_game/UILib/delete_button.dart';
 import 'package:preparation_game/UILib/subject_menu.dart';
 import 'package:preparation_game/UILib/background_widget.dart';
-import 'package:preparation_game/UILib/scroll_panel.dart';
 
 class StartingPage extends StatefulWidget {
   final String challengeTitle;
@@ -38,23 +37,25 @@ class _StartingPageState extends State<StartingPage> {
   }
 
   void _submitSubject(String value) {
-    final cleanText = value.trim();
-    if (cleanText.isNotEmpty) {
-      setState(() {
-        if (_subjectsByLevel.isEmpty) {
-          _subjectsByLevel.add([]);
-        }
-        _subjectsByLevel.last.add(cleanText);
-        _subjectInputController.clear();
-        _isEnteringSubject = false;
-        _showOptions = false;
-      });
-    } else {
-      setState(() => _isEnteringSubject = false);
-    }
+    FocusScope.of(context).unfocus(); // Close keyboard safely
+
+    Future.delayed(const Duration(milliseconds: 100), () {
+      final cleanText = value.trim();
+      if (cleanText.isNotEmpty) {
+        setState(() {
+          if (_subjectsByLevel.isEmpty) _subjectsByLevel.add([]);
+          _subjectsByLevel.last.add(cleanText);
+          _subjectInputController.clear();
+          _isEnteringSubject = false;
+          _showOptions = false;
+        });
+      } else {
+        setState(() => _isEnteringSubject = false);
+      }
+    });
   }
 
-@override
+  @override
   Widget build(BuildContext context) {
     final bool isLevelEnabled = _subjectsByLevel.isNotEmpty;
     final screenWidth = MediaQuery.of(context).size.width;
@@ -76,73 +77,82 @@ class _StartingPageState extends State<StartingPage> {
         ),
         body: Stack(
           children: [
-            ScrollPanel(
-              child: Center(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      if (_subjectsByLevel.isEmpty && !_isEnteringSubject)
-                        const Text('No subjects added yet.', style: TextStyle(color: Colors.white, fontSize: 16)),
-                      
-                      // Map the rows
-                      ..._subjectsByLevel.asMap().entries.map((entry) {
-                        int index = entry.key;
-                        List<String> levelSubjects = entry.value;
+            // Stable vertical scrolling area
+            LayoutBuilder(
+              builder: (context, constraints) {
+                return SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  padding: const EdgeInsets.only(top: 20, bottom: 120),
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                    child: Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          if (_subjectsByLevel.isEmpty && !_isEnteringSubject)
+                            const Text('No subjects added yet.', style: TextStyle(color: Colors.white, fontSize: 16)),
+                          
+                          ..._subjectsByLevel.asMap().entries.map((entry) {
+                            int index = entry.key;
+                            List<String> levelSubjects = entry.value;
 
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 12.0),
-                          child: Row(
-                            children: [
-                              SizedBox(width: 40, child: Text('${index + 1}', style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold), textAlign: TextAlign.center)),
-                              Expanded(
-                                child: Align(
-                                  alignment: Alignment.center,
-                                  child: Wrap(
-                                    alignment: WrapAlignment.center,
-                                    spacing: 8,
-                                    runSpacing: 8,
-                                    children: levelSubjects.map((text) {
-                                      final isMarked = _markedForDeletion.contains(text);
-                                      return StickyNoteButton(
-                                        key: ValueKey(text),
-                                        text: text,
-                                        isMarked: isMarked,
-                                        width: dynamicNoteWidth,
-                                        onTap: _isDeleting
-                                            ? () => setState(() {
-                                                if (isMarked) _markedForDeletion.remove(text);
-                                                else _markedForDeletion.add(text);
-                                              })
-                                            : () {},
-                                      );
-                                    }).toList(),
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 12.0),
+                              child: Row(
+                                children: [
+                                  SizedBox(width: 40, child: Text('${index + 1}', style: const TextStyle(color: Color.fromARGB(255, 168, 135, 105), fontSize: 20, fontWeight: FontWeight.bold), textAlign: TextAlign.center)),
+                                  Expanded(
+                                    child: Center(
+                                      child: ConstrainedBox(
+                                        constraints: BoxConstraints(maxWidth: screenWidth * 0.8),
+                                        child: Wrap(
+                                          alignment: WrapAlignment.center,
+                                          spacing: 8,
+                                          runSpacing: 8,
+                                          children: levelSubjects.map((text) {
+                                            final isMarked = _markedForDeletion.contains(text);
+                                            return StickyNoteButton(
+                                              key: ValueKey(text),
+                                              text: text,
+                                              isMarked: isMarked,
+                                              width: dynamicNoteWidth,
+                                              onTap: _isDeleting
+                                                  ? () => setState(() {
+                                                      if (isMarked) _markedForDeletion.remove(text);
+                                                      else _markedForDeletion.add(text);
+                                                    })
+                                                  : () {},
+                                            );
+                                          }).toList(),
+                                        ),
+                                      ),
+                                    ),
                                   ),
-                                ),
+                                  const SizedBox(width: 40),
+                                ],
                               ),
-                              const SizedBox(width: 40),
-                            ],
-                          ),
-                        );
-                      }),
-
-                      if (_isEnteringSubject)
-                        Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 16.0),
-                          child: InputField(
-                            key: UniqueKey(),
-                            controller: _subjectInputController,
-                            hintText: 'Subject Name & press Enter...',
-                            onSubmitted: _submitSubject,
-                          ),
-                        ),
-                    ],
+                            );
+                          }),
+                          
+                          if (_isEnteringSubject)
+                            Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 16.0),
+                              child: InputField(
+                                key: UniqueKey(),
+                                controller: _subjectInputController,
+                                hintText: 'Subject Name...',
+                                onSubmitted: _submitSubject,
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
                   ),
-                ),
-              ),
+                );
+              },
             ),
-            // ... Positioned buttons remain the same
+            
+            // Fixed bottom buttons
             Positioned(
               bottom: 20,
               left: 20,
