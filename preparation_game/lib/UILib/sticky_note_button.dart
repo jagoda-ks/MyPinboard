@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:preparation_game/settings.dart'; // 1. Import your new settings class
+import 'package:preparation_game/utils/settings.dart'; // 1. Import your new settings class
 
 class StickyNoteButton extends StatelessWidget {
   final String text;

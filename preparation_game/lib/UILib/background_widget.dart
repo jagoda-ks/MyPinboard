@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:preparation_game/settings.dart';
+import 'package:preparation_game/utils/settings.dart';
 
 class BackgroundWidget extends StatelessWidget {
   final Widget child;
