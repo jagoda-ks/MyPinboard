@@ -33,7 +33,7 @@ class StickyNoteButton extends StatelessWidget {
                     image: const AssetImage('assets/images/sticky_note.png'),
                     fit: BoxFit.fill,
                     colorFilter: isMarked
-                        ? ColorFilter.mode(const Color.fromARGB(255, 89, 13, 13).withOpacity(0.4), BlendMode.srcATop)
+                        ? ColorFilter.mode(const Color.fromARGB(255, 89, 13, 13).withValues(alpha: 0.4), BlendMode.srcATop)
                         : null,
                   ),
                 ),

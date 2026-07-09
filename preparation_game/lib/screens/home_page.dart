@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:preparation_game/UILib/background_widget.dart';
 import 'package:preparation_game/UILib/button_builder.dart';
 import 'package:preparation_game/UILib/input_field.dart';
-import 'starting_page.dart';
+import 'progress_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -60,7 +60,7 @@ class _HomePageState extends State<HomePage> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => StartingPage(challengeTitle: cleanTitle),
+                          builder: (context) => ProgressPage(challengeTitle: cleanTitle),
                         ),
                       );
                     })
