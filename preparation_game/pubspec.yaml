@@ -92,6 +92,9 @@ flutter:
       - assets/images/pinboard.png
       - assets/images/sticky_note.png
       - assets/images/pin.png
+      - assets/images/board.png
+      - assets/images/frame.png
+      - assets/images/add_button.png
   fonts:
       - family: CustomFont  # This is the name you will use in your code
         fonts:
