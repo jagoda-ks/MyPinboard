@@ -30,9 +30,9 @@ class AppSettings {
   // The text style for your Page Titles (AppBars)
   static const TextStyle pageTitleText = TextStyle(
     fontFamily: customFontFamily,
-    fontSize: 20,
-    color: Colors.white,
-    fontWeight: FontWeight.bold,
+    fontSize: 24,
+    color: titleColor,
+    fontWeight: FontWeight.w600,
   );
 
   // -----------------------------------------
@@ -42,6 +42,7 @@ class AppSettings {
   static const Color deleteButtonNormal = Colors.red;
   static Color deleteButtonActive = Colors.red.shade800; // .shade requires removing 'const' if used directly
   static const Color iconColorWhite = Colors.white;
+  static const Color titleColor = Color.fromARGB(255, 202, 187, 161);
 
   // -----------------------------------------
   // LAYOUT & DIMENSIONS
