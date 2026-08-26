@@ -24,6 +24,7 @@ class _ProgressPageState extends State<ProgressPage> {
   bool _showOptions = false;
   bool _isEnteringSubject = false;
   bool _isDeleting = false;
+  int _targetLevelForSubject = 1; // 👈 1. Track the target level here
 
   // Board Data & Selection
   List<List<Subject>> _subjectsByLevel = [[]];
@@ -52,7 +53,6 @@ class _ProgressPageState extends State<ProgressPage> {
   void _toggleEditMode() {
     setState(() {
       _isEditMode = !_isEditMode;
-      // Reset active sub-states if exiting Edit Mode
       if (!_isEditMode) {
         _isDeleting = false;
         _showOptions = false;
@@ -65,16 +65,23 @@ class _ProgressPageState extends State<ProgressPage> {
     });
   }
 
+  // 👈 2. Update _submitSubject to use _targetLevelForSubject and auto-expand rows
   void _submitSubject(String value) {
     FocusScope.of(context).unfocus();
     final cleanText = value.trim();
     if (cleanText.isNotEmpty) {
       setState(() {
-        if (_subjectsByLevel.isEmpty) _subjectsByLevel.add([]);
-        _subjectsByLevel.last.add(Subject(
+        // Ensure that empty level lists exist up to the target level index
+        while (_subjectsByLevel.length < _targetLevelForSubject) {
+          _subjectsByLevel.add([]);
+        }
+        
+        // Add the subject precisely to the target level row (index is targetLevel - 1)
+        _subjectsByLevel[_targetLevelForSubject - 1].add(Subject(
           id: DateTime.now().microsecondsSinceEpoch.toString(),
           text: cleanText,
         ));
+        
         _subjectInputController.clear();
         _isEnteringSubject = false;
       });
@@ -94,15 +101,13 @@ class _ProgressPageState extends State<ProgressPage> {
         centerTitle: true,
         backgroundColor: Colors.transparent,
         elevation: 0,
-
         leading: Transform.translate(
-          offset: const Offset(-8.0, -10.0), // Match offset with title & edit button
+          offset: const Offset(-8.0, -10.0),
           child: IconButton(
             icon: const Icon(Icons.arrow_back, color: AppSettings.titleColor),
             onPressed: () => Navigator.of(context).pop(),
           ),
         ),
-
         title: Transform.translate(
           offset: const Offset(0, -10.0),
           child: _isEditMode
@@ -173,22 +178,22 @@ class _ProgressPageState extends State<ProgressPage> {
                               scrollDirection: Axis.horizontal,
                               child: Row(
                                 children: levelSubjects.map((subject) => Padding(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                                  child: StickyNoteButton(
-                                    text: subject.text,
-                                    isMarked: _markedForDeletionIds.contains(subject.id),
-                                    width: dynamicNoteWidth,
-                                    onTap: (_isEditMode && _isDeleting)
-                                        ? () => setState(() {
-                                            if (_markedForDeletionIds.contains(subject.id)) {
-                                              _markedForDeletionIds.remove(subject.id);
-                                            } else {
-                                              _markedForDeletionIds.add(subject.id);
-                                            }
-                                          })
-                                        : () {},
-                                  ),
-                                )).toList(),
+                                      padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                                      child: StickyNoteButton(
+                                        text: subject.text,
+                                        isMarked: _markedForDeletionIds.contains(subject.id),
+                                        width: dynamicNoteWidth,
+                                        onTap: (_isEditMode && _isDeleting)
+                                            ? () => setState(() {
+                                                if (_markedForDeletionIds.contains(subject.id)) {
+                                                  _markedForDeletionIds.remove(subject.id);
+                                                } else {
+                                                  _markedForDeletionIds.add(subject.id);
+                                                }
+                                              })
+                                            : () {},
+                                      ),
+                                    )).toList(),
                               ),
                             ),
                           ],
@@ -201,7 +206,7 @@ class _ProgressPageState extends State<ProgressPage> {
             ),
           ),
 
-          // 2. LAYER 4: Subject Text Input Dialog (On Top of Frame)
+          // 2. LAYER 4: Subject Text Input Dialog
           if (_isEditMode && _isEnteringSubject)
             Center(
               child: InputField(
@@ -211,7 +216,7 @@ class _ProgressPageState extends State<ProgressPage> {
               ),
             ),
 
-          // 3. LAYER 4: Delete Button with your Original Deletion Logic (On Top of Frame)
+          // 3. LAYER 4: Delete Button Logic
           if (_isEditMode)
             Positioned(
               bottom: 30,
@@ -280,14 +285,24 @@ class _ProgressPageState extends State<ProgressPage> {
               ),
             ),
 
-          // 4. LAYER 4: Add Menu with Popup Note Overlay (On Top of Frame)
+          // 4. LAYER 4: Add Menu with Popup Note Overlay
           if (_isEditMode)
-            Positioned.fill( // 👈 Wrap with Positioned.fill so the popup can center on screen
+            Positioned.fill(
               child: SubjectMenu(
                 showOptions: _showOptions,
-                isLevelEnabled: true,
-                onAddLevel: () => setState(() => _subjectsByLevel.add([])),
-                onAddSubject: () => setState(() {
+                currentHighestLevel: _subjectsByLevel
+                    .where((level) => level.isNotEmpty)
+                    .length,
+                onAddLevel: (targetLevel) {
+                  setState(() {
+                    while (_subjectsByLevel.length < targetLevel) {
+                      _subjectsByLevel.add([]);
+                    }
+                  });
+                },
+                // 👈 3. Catch the target level selected in the popup and open the input field
+                onAddSubjectToLevel: (targetLevel) => setState(() {
+                  _targetLevelForSubject = targetLevel;
                   _isEnteringSubject = true;
                   _showOptions = false;
                 }),
