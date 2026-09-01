@@ -10,7 +10,7 @@ class AppSettings {
 
   // The text style for your Sticky Note buttons
   static const TextStyle stickyNoteText = TextStyle(
-    fontFamily: customFontFamily,
+    fontFamily: 'CustomFont2',
     fontSize: 24    ,
     color: Colors.black,
     fontWeight: FontWeight.bold,

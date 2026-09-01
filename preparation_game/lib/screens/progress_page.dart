@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:preparation_game/UILib/input_field.dart';
 import 'package:preparation_game/UILib/sticky_note_button.dart';
 import 'package:preparation_game/UILib/delete_button.dart';
 import 'package:preparation_game/UILib/subject_menu.dart';
@@ -22,15 +21,14 @@ class _ProgressPageState extends State<ProgressPage> {
   // Mode & UI Flags
   bool _isEditMode = false;
   bool _showOptions = false;
-  bool _isEnteringSubject = false;
   bool _isDeleting = false;
+  int _targetLevelForSubject = 1;
 
   // Board Data & Selection
   List<List<Subject>> _subjectsByLevel = [[]];
   final Set<String> _markedForDeletionIds = {};
 
   // Controllers & State variables
-  late final TextEditingController _subjectInputController;
   late final TextEditingController _titleController;
   late String _currentTitle;
 
@@ -39,24 +37,20 @@ class _ProgressPageState extends State<ProgressPage> {
     super.initState();
     _currentTitle = widget.challengeTitle;
     _titleController = TextEditingController(text: _currentTitle);
-    _subjectInputController = TextEditingController();
   }
 
   @override
   void dispose() {
     _titleController.dispose();
-    _subjectInputController.dispose();
     super.dispose();
   }
 
   void _toggleEditMode() {
     setState(() {
       _isEditMode = !_isEditMode;
-      // Reset active sub-states if exiting Edit Mode
       if (!_isEditMode) {
         _isDeleting = false;
         _showOptions = false;
-        _isEnteringSubject = false;
         _markedForDeletionIds.clear();
         _currentTitle = _titleController.text.trim().isEmpty
             ? 'Untitled'
@@ -65,21 +59,19 @@ class _ProgressPageState extends State<ProgressPage> {
     });
   }
 
-  void _submitSubject(String value) {
-    FocusScope.of(context).unfocus();
-    final cleanText = value.trim();
+  // Handles adding the subject directly to the target level passed from the popup menu
+  void _addSubjectToLevel(int targetLevel, String subjectText) {
+    final cleanText = subjectText.trim();
     if (cleanText.isNotEmpty) {
       setState(() {
-        if (_subjectsByLevel.isEmpty) _subjectsByLevel.add([]);
-        _subjectsByLevel.last.add(Subject(
+        while (_subjectsByLevel.length < targetLevel) {
+          _subjectsByLevel.add([]);
+        }
+        _subjectsByLevel[targetLevel - 1].add(Subject(
           id: DateTime.now().microsecondsSinceEpoch.toString(),
           text: cleanText,
         ));
-        _subjectInputController.clear();
-        _isEnteringSubject = false;
       });
-    } else {
-      setState(() => _isEnteringSubject = false);
     }
   }
 
@@ -94,15 +86,13 @@ class _ProgressPageState extends State<ProgressPage> {
         centerTitle: true,
         backgroundColor: Colors.transparent,
         elevation: 0,
-
         leading: Transform.translate(
-          offset: const Offset(-8.0, -10.0), // Match offset with title & edit button
+          offset: const Offset(-8.0, -10.0),
           child: IconButton(
             icon: const Icon(Icons.arrow_back, color: AppSettings.titleColor),
             onPressed: () => Navigator.of(context).pop(),
           ),
         ),
-
         title: Transform.translate(
           offset: const Offset(0, -10.0),
           child: _isEditMode
@@ -135,7 +125,7 @@ class _ProgressPageState extends State<ProgressPage> {
       ),
       body: Stack(
         children: [
-          // 1. LAYER 1-3: Background Board + Notes + Frame Overlay
+          // 1. Background Board & Levels Rendering
           Positioned.fill(
             child: BackgroundWidget(
               child: InteractiveViewer(
@@ -173,22 +163,22 @@ class _ProgressPageState extends State<ProgressPage> {
                               scrollDirection: Axis.horizontal,
                               child: Row(
                                 children: levelSubjects.map((subject) => Padding(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                                  child: StickyNoteButton(
-                                    text: subject.text,
-                                    isMarked: _markedForDeletionIds.contains(subject.id),
-                                    width: dynamicNoteWidth,
-                                    onTap: (_isEditMode && _isDeleting)
-                                        ? () => setState(() {
-                                            if (_markedForDeletionIds.contains(subject.id)) {
-                                              _markedForDeletionIds.remove(subject.id);
-                                            } else {
-                                              _markedForDeletionIds.add(subject.id);
-                                            }
-                                          })
-                                        : () {},
-                                  ),
-                                )).toList(),
+                                      padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                                      child: StickyNoteButton(
+                                        text: subject.text,
+                                        isMarked: _markedForDeletionIds.contains(subject.id),
+                                        width: dynamicNoteWidth,
+                                        onTap: (_isEditMode && _isDeleting)
+                                            ? () => setState(() {
+                                                if (_markedForDeletionIds.contains(subject.id)) {
+                                                  _markedForDeletionIds.remove(subject.id);
+                                                } else {
+                                                  _markedForDeletionIds.add(subject.id);
+                                                }
+                                              })
+                                            : () {},
+                                      ),
+                                    )).toList(),
                               ),
                             ),
                           ],
@@ -201,17 +191,7 @@ class _ProgressPageState extends State<ProgressPage> {
             ),
           ),
 
-          // 2. LAYER 4: Subject Text Input Dialog (On Top of Frame)
-          if (_isEditMode && _isEnteringSubject)
-            Center(
-              child: InputField(
-                controller: _subjectInputController,
-                hintText: 'Subject Name...',
-                onSubmitted: _submitSubject,
-              ),
-            ),
-
-          // 3. LAYER 4: Delete Button with your Original Deletion Logic (On Top of Frame)
+          // 2. Delete Button Logic
           if (_isEditMode)
             Positioned(
               bottom: 30,
@@ -280,17 +260,27 @@ class _ProgressPageState extends State<ProgressPage> {
               ),
             ),
 
-          // 4. LAYER 4: Add Menu with Popup Note Overlay (On Top of Frame)
+          // 3. Add Menu with Popup Note Overlay & Integrated Input Field
           if (_isEditMode)
-            Positioned.fill( // 👈 Wrap with Positioned.fill so the popup can center on screen
+            Positioned.fill(
               child: SubjectMenu(
                 showOptions: _showOptions,
-                isLevelEnabled: true,
-                onAddLevel: () => setState(() => _subjectsByLevel.add([])),
-                onAddSubject: () => setState(() {
-                  _isEnteringSubject = true;
-                  _showOptions = false;
-                }),
+                currentHighestLevel: _subjectsByLevel
+                    .where((level) => level.isNotEmpty)
+                    .length,
+                onAddLevel: (targetLevel) {
+                  setState(() {
+                    while (_subjectsByLevel.length < targetLevel) {
+                      _subjectsByLevel.add([]);
+                    }
+                  });
+                },
+                onAddSubjectToLevel: (targetLevel, subjectText) {
+                  setState(() {
+                    _targetLevelForSubject = targetLevel;
+                    _addSubjectToLevel(targetLevel, subjectText); // 👈 Passes text to board creation method
+                  });
+                },
                 onToggleMenu: () => setState(() => _showOptions = !_showOptions),
               ),
             ),

@@ -7,7 +7,7 @@ class AddButton extends StatelessWidget {
   const AddButton({
     super.key,
     required this.onPressed,
-    this.size = 60.0,
+    this.size = 160.0,
   });
 
   @override
