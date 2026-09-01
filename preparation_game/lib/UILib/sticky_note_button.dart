@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:preparation_game/utils/settings.dart'; // 1. Import your new settings class
+import 'package:preparation_game/utils/settings.dart';
 
 class StickyNoteButton extends StatelessWidget {
   final String text;
@@ -20,8 +20,7 @@ class StickyNoteButton extends StatelessWidget {
     return SizedBox(
       width: width,
       child: AspectRatio(
-        // 2. Use the ratio from AppSettings
-        aspectRatio: AppSettings.stickyNoteRatio, 
+        aspectRatio: AppSettings.stickyNoteRatio,
         child: Stack(
           clipBehavior: Clip.none,
           children: [
@@ -33,21 +32,28 @@ class StickyNoteButton extends StatelessWidget {
                     image: const AssetImage('assets/images/sticky_note.png'),
                     fit: BoxFit.fill,
                     colorFilter: isMarked
-                        ? ColorFilter.mode(const Color.fromARGB(255, 89, 13, 13).withValues(alpha: 0.4), BlendMode.srcATop)
+                        ? ColorFilter.mode(
+                            const Color.fromARGB(255, 89, 13, 13)
+                                .withOpacity(0.4),
+                            BlendMode.srcATop)
                         : null,
                   ),
                 ),
                 alignment: Alignment.center,
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20.0),
-                  child: Text(
-                    text,
-                    textAlign: TextAlign.center,
-                    softWrap: true,
-                    maxLines: 3,
-                    overflow: TextOverflow.ellipsis,
-                    // 3. Use the centralized text style!
-                    style: AppSettings.stickyNoteText, 
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 24.0, vertical: 20.0),
+                  // 👈 Wrap the text in a Tooltip to reveal the full text on hover/long-press
+                  child: Tooltip(
+                    message: text, // Shows the complete, untouched text on hover
+                    child: Text(
+                      text,
+                      textAlign: TextAlign.center,
+                      softWrap: true,
+                      maxLines: 3, // Restricts height visibility to 3 lines
+                      overflow: TextOverflow.ellipsis, // 👈 Appends "..." automatically when text overflows
+                      style: AppSettings.stickyNoteText,
+                    ),
                   ),
                 ),
               ),
@@ -57,7 +63,8 @@ class StickyNoteButton extends StatelessWidget {
               left: 0,
               right: 0,
               child: IgnorePointer(
-                child: Image.asset('assets/images/pin.png', fit: BoxFit.contain),
+                child: Image.asset('assets/images/pin.png',
+                    fit: BoxFit.contain),
               ),
             ),
           ],

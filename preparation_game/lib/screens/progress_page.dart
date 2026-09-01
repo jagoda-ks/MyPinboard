@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:preparation_game/UILib/input_field.dart';
 import 'package:preparation_game/UILib/sticky_note_button.dart';
 import 'package:preparation_game/UILib/delete_button.dart';
 import 'package:preparation_game/UILib/subject_menu.dart';
@@ -22,16 +21,14 @@ class _ProgressPageState extends State<ProgressPage> {
   // Mode & UI Flags
   bool _isEditMode = false;
   bool _showOptions = false;
-  bool _isEnteringSubject = false;
   bool _isDeleting = false;
-  int _targetLevelForSubject = 1; // 👈 1. Track the target level here
+  int _targetLevelForSubject = 1;
 
   // Board Data & Selection
   List<List<Subject>> _subjectsByLevel = [[]];
   final Set<String> _markedForDeletionIds = {};
 
   // Controllers & State variables
-  late final TextEditingController _subjectInputController;
   late final TextEditingController _titleController;
   late String _currentTitle;
 
@@ -40,13 +37,11 @@ class _ProgressPageState extends State<ProgressPage> {
     super.initState();
     _currentTitle = widget.challengeTitle;
     _titleController = TextEditingController(text: _currentTitle);
-    _subjectInputController = TextEditingController();
   }
 
   @override
   void dispose() {
     _titleController.dispose();
-    _subjectInputController.dispose();
     super.dispose();
   }
 
@@ -56,7 +51,6 @@ class _ProgressPageState extends State<ProgressPage> {
       if (!_isEditMode) {
         _isDeleting = false;
         _showOptions = false;
-        _isEnteringSubject = false;
         _markedForDeletionIds.clear();
         _currentTitle = _titleController.text.trim().isEmpty
             ? 'Untitled'
@@ -65,28 +59,19 @@ class _ProgressPageState extends State<ProgressPage> {
     });
   }
 
-  // 👈 2. Update _submitSubject to use _targetLevelForSubject and auto-expand rows
-  void _submitSubject(String value) {
-    FocusScope.of(context).unfocus();
-    final cleanText = value.trim();
+  // Handles adding the subject directly to the target level passed from the popup menu
+  void _addSubjectToLevel(int targetLevel, String subjectText) {
+    final cleanText = subjectText.trim();
     if (cleanText.isNotEmpty) {
       setState(() {
-        // Ensure that empty level lists exist up to the target level index
-        while (_subjectsByLevel.length < _targetLevelForSubject) {
+        while (_subjectsByLevel.length < targetLevel) {
           _subjectsByLevel.add([]);
         }
-        
-        // Add the subject precisely to the target level row (index is targetLevel - 1)
-        _subjectsByLevel[_targetLevelForSubject - 1].add(Subject(
+        _subjectsByLevel[targetLevel - 1].add(Subject(
           id: DateTime.now().microsecondsSinceEpoch.toString(),
           text: cleanText,
         ));
-        
-        _subjectInputController.clear();
-        _isEnteringSubject = false;
       });
-    } else {
-      setState(() => _isEnteringSubject = false);
     }
   }
 
@@ -140,7 +125,7 @@ class _ProgressPageState extends State<ProgressPage> {
       ),
       body: Stack(
         children: [
-          // 1. LAYER 1-3: Background Board + Notes + Frame Overlay
+          // 1. Background Board & Levels Rendering
           Positioned.fill(
             child: BackgroundWidget(
               child: InteractiveViewer(
@@ -206,17 +191,7 @@ class _ProgressPageState extends State<ProgressPage> {
             ),
           ),
 
-          // 2. LAYER 4: Subject Text Input Dialog
-          if (_isEditMode && _isEnteringSubject)
-            Center(
-              child: InputField(
-                controller: _subjectInputController,
-                hintText: 'Subject Name...',
-                onSubmitted: _submitSubject,
-              ),
-            ),
-
-          // 3. LAYER 4: Delete Button Logic
+          // 2. Delete Button Logic
           if (_isEditMode)
             Positioned(
               bottom: 30,
@@ -285,7 +260,7 @@ class _ProgressPageState extends State<ProgressPage> {
               ),
             ),
 
-          // 4. LAYER 4: Add Menu with Popup Note Overlay
+          // 3. Add Menu with Popup Note Overlay & Integrated Input Field
           if (_isEditMode)
             Positioned.fill(
               child: SubjectMenu(
@@ -300,12 +275,12 @@ class _ProgressPageState extends State<ProgressPage> {
                     }
                   });
                 },
-                // 👈 3. Catch the target level selected in the popup and open the input field
-                onAddSubjectToLevel: (targetLevel) => setState(() {
-                  _targetLevelForSubject = targetLevel;
-                  _isEnteringSubject = true;
-                  _showOptions = false;
-                }),
+                onAddSubjectToLevel: (targetLevel, subjectText) {
+                  setState(() {
+                    _targetLevelForSubject = targetLevel;
+                    _addSubjectToLevel(targetLevel, subjectText); // 👈 Passes text to board creation method
+                  });
+                },
                 onToggleMenu: () => setState(() => _showOptions = !_showOptions),
               ),
             ),
