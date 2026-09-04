@@ -265,22 +265,25 @@ class _ProgressPageState extends State<ProgressPage> {
             Positioned.fill(
               child: SubjectMenu(
                 showOptions: _showOptions,
-                currentHighestLevel: _subjectsByLevel
-                    .where((level) => level.isNotEmpty)
-                    .length,
-                onAddLevel: (targetLevel) {
-                  setState(() {
-                    while (_subjectsByLevel.length < targetLevel) {
-                      _subjectsByLevel.add([]);
-                    }
-                  });
-                },
-                onAddSubjectToLevel: (targetLevel, subjectText) {
-                  setState(() {
-                    _targetLevelForSubject = targetLevel;
-                    _addSubjectToLevel(targetLevel, subjectText); // 👈 Passes text to board creation method
-                  });
-                },
+                currentHighestLevel: _subjectsByLevel.where((l) => l.isNotEmpty).length,
+                onAddLevel: (levelNum) => setState(() {
+                  while (_subjectsByLevel.length < levelNum) {
+                    _subjectsByLevel.add([]);
+                  }
+                }),
+                onAddSubjectsToLevel: (targetLevel, subjects) => setState(() {
+                  while (_subjectsByLevel.length < targetLevel) {
+                    _subjectsByLevel.add([]);
+                  }
+                  for (final text in subjects) {
+                    _subjectsByLevel[targetLevel - 1].add(
+                      Subject(
+                        id: DateTime.now().microsecondsSinceEpoch.toString() + text,
+                        text: text,
+                      ),
+                    );
+                  }
+                }),
                 onToggleMenu: () => setState(() => _showOptions = !_showOptions),
               ),
             ),

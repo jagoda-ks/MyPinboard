@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:preparation_game/UILib/add_button.dart';
+import 'package:preparation_game/UILib/level_header_row.dart';
+import 'package:preparation_game/UILib/subject_input_field.dart';
+import 'package:preparation_game/UILib/submit_button.dart';
 
 class SubjectMenu extends StatefulWidget {
   final bool showOptions;
   final int currentHighestLevel;
   final Function(int level) onAddLevel;
-  final Function(int level, String subjectText) onAddSubjectToLevel; // 👈 Accept 2 arguments here
+  final Function(int level, List<String> subjects) onAddSubjectsToLevel;
   final VoidCallback onToggleMenu;
 
   const SubjectMenu({
@@ -13,7 +16,7 @@ class SubjectMenu extends StatefulWidget {
     required this.showOptions,
     required this.currentHighestLevel,
     required this.onAddLevel,
-    required this.onAddSubjectToLevel,
+    required this.onAddSubjectsToLevel,
     required this.onToggleMenu,
   });
 
@@ -23,14 +26,13 @@ class SubjectMenu extends StatefulWidget {
 
 class _SubjectMenuState extends State<SubjectMenu> {
   late TextEditingController _levelInputController;
-  late TextEditingController _subjectInputController; // 👈 Controller for subject name
+  List<TextEditingController> _subjectControllers = [];
   bool _isNewMode = true;
 
   @override
   void initState() {
     super.initState();
     _levelInputController = TextEditingController();
-    _subjectInputController = TextEditingController(); // 👈 Initialize subject controller
     _resetState();
   }
 
@@ -46,7 +48,10 @@ class _SubjectMenuState extends State<SubjectMenu> {
     setState(() {
       _isNewMode = true;
       _levelInputController.text = (widget.currentHighestLevel + 1).toString();
-      _subjectInputController.clear();
+      for (final controller in _subjectControllers) {
+        controller.dispose();
+      }
+      _subjectControllers = [TextEditingController()];
     });
   }
 
@@ -58,59 +63,72 @@ class _SubjectMenuState extends State<SubjectMenu> {
       });
       return;
     }
+
     setState(() {
       _isNewMode = !_isNewMode;
-      if (_isNewMode) {
-        _levelInputController.text = (widget.currentHighestLevel + 1).toString();
-      } else {
-        _levelInputController.clear();
-      }
+      _levelInputController.text = _isNewMode 
+          ? (widget.currentHighestLevel + 1).toString() 
+          : widget.currentHighestLevel.toString();
     });
   }
 
-  void _handleSubjectSubmit() {
-      final cleanLevelText = _levelInputController.text.trim();
-      final parsedLevel = int.tryParse(cleanLevelText);
-      final subjectText = _subjectInputController.text.trim(); // 👈 Grab typed subject name
+  void _addSubjectLine() {
+    setState(() => _subjectControllers.add(TextEditingController()));
+  }
 
-      if (parsedLevel != null && parsedLevel >= 1) {
-        if (!_isNewMode && parsedLevel > widget.currentHighestLevel) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                'Please enter a valid level between 1 and ${widget.currentHighestLevel}',
-              ),
-              duration: const Duration(seconds: 2),
-            ),
-          );
-          return;
-        }
-
-        // 👈 Pass both arguments up to the parent page
-        widget.onAddSubjectToLevel(parsedLevel, subjectText);
-        widget.onToggleMenu();
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Please select a valid target level.'),
-            duration: Duration(seconds: 2),
-          ),
-        );
-      }
+  void _removeSubjectLine(int index) {
+    if (_subjectControllers.length > 1) {
+      setState(() {
+        _subjectControllers[index].dispose();
+        _subjectControllers.removeAt(index);
+      });
     }
+  }
+
+  void _handleSubjectSubmit() {
+    final cleanLevelText = _levelInputController.text.trim();
+    final parsedLevel = int.tryParse(cleanLevelText);
+    final subjectsToAdd = _subjectControllers
+        .map((c) => c.text.trim())
+        .where((text) => text.isNotEmpty)
+        .toList();
+
+    if (subjectsToAdd.isEmpty) {
+      _showSnackbar('Please enter at least one subject.');
+      return;
+    }
+
+    if (parsedLevel != null && parsedLevel >= 1) {
+      if (!_isNewMode && parsedLevel > widget.currentHighestLevel) {
+        _showSnackbar('Please enter a valid level between 1 and ${widget.currentHighestLevel}');
+        return;
+      }
+      widget.onAddSubjectsToLevel(parsedLevel, subjectsToAdd);
+      widget.onToggleMenu();
+    } else {
+      _showSnackbar('Please enter a valid target level.');
+    }
+  }
+
+  void _showSnackbar(String text) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(text), duration: const Duration(seconds: 2)),
+    );
+  }
 
   @override
   void dispose() {
     _levelInputController.dispose();
-    _subjectInputController.dispose();
+    for (final controller in _subjectControllers) {
+      controller.dispose();
+    }
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
-    final double popupSize = (screenWidth * 0.85).clamp(300.0, 380.0);
-    final y = widget.currentHighestLevel;
+    final double popupSize = (screenWidth * 0.85).clamp(300.0, 420.0);
 
     return Stack(
       children: [
@@ -122,7 +140,7 @@ class _SubjectMenuState extends State<SubjectMenu> {
               color: Colors.black26,
               alignment: Alignment.center,
               child: GestureDetector(
-                onTap: () {},
+                onTap: () {}, // Prevent taps from closing backdrop
                 child: SizedBox(
                   width: popupSize,
                   height: popupSize,
@@ -137,75 +155,65 @@ class _SubjectMenuState extends State<SubjectMenu> {
                       ),
                       Padding(
                         padding: const EdgeInsets.symmetric(
-                          vertical: 5.0,
-                          horizontal: 40.0,
+                          vertical: 110.0,
+                          horizontal: 36.0,
                         ),
                         child: Column(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          // 1. Expand the column to fill the popup note's height
+                          mainAxisSize: MainAxisSize.max,
                           children: [
-                            // TOP ROW: [TextButton] | [Plain Level Text] | [Level Input Field]
-                            Transform.translate(
-                              offset: const Offset(0, -6.0),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                crossAxisAlignment: CrossAxisAlignment.center,
+                            // 2. PINNED AT TOP
+                            LevelHeaderRow(
+                              isNewMode: _isNewMode,
+                              hasLevels: widget.currentHighestLevel > 0,
+                              currentHighestLevel: widget.currentHighestLevel,
+                              controller: _levelInputController,
+                              onToggleMode: _toggleMode,
+                            ),
+                            const SizedBox(height: 2),
+
+                            // 3. MIDDLE AREA: Takes whatever space is left and scrolls inside
+                            Expanded(
+                              child: ListView(
+                                shrinkWrap: true,
+                                padding: EdgeInsets.zero,
                                 children: [
-                                  TextButton(
-                                    onPressed: _toggleMode,
-                                    style: TextButton.styleFrom(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 4.0,
-                                        vertical: 2.0,
-                                      ),
-                                      minimumSize: Size.zero,
-                                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                    ),
-                                    child: Text(
-                                      _isNewMode ? 'NEW' : 'EXISTENT',
-                                      style: const TextStyle(
-                                        fontFamily: 'CustomFont2',
-                                        fontSize: 13,
-                                        color: Colors.black,
-                                      ),
-                                    ),
-                                  ),
-                                  const Padding(
-                                    padding: EdgeInsets.symmetric(horizontal: 2.0),
-                                    child: Text(
-                                      'Level',
-                                      style: TextStyle(
-                                        fontFamily: 'CustomFont2',
-                                        fontSize: 15,
-                                        color: Colors.black,
-                                      ),
-                                    ),
-                                  ),
-                                  SizedBox(
-                                    width: 75,
-                                    height: 50,
-                                    child: TextField(
-                                      controller: _levelInputController,
-                                      enabled: !_isNewMode,
-                                      keyboardType: TextInputType.number,
-                                      textAlign: TextAlign.center,
-                                      style: const TextStyle(
-                                        fontFamily: 'CustomFont2',
-                                        fontSize: 14,
-                                        color: Colors.black,
-                                      ),
-                                      decoration: InputDecoration(
-                                        hintText: '1 - $y',
-                                        hintStyle: TextStyle(
-                                          fontFamily: 'CustomFont2',
-                                          fontSize: 11,
-                                          color: Colors.grey.shade600,
+                                  ..._subjectControllers.asMap().entries.map((entry) {
+                                    final index = entry.key;
+                                    final controller = entry.value;
+                                    return SubjectInputField(
+                                      index: index,
+                                      controller: controller,
+                                      canRemove: _subjectControllers.length > 1,
+                                      onRemove: () => _removeSubjectLine(index),
+                                    );
+                                  }),
+
+                                  // Add subject line button
+                                  Align(
+                                    alignment: Alignment.centerLeft,
+                                    child: TextButton.icon(
+                                      onPressed: _addSubjectLine,
+                                      icon: const Icon(
+                                        IconData(
+                                          0x002b,
+                                          fontFamily: 'CustomFont2'
                                         ),
-                                        contentPadding: EdgeInsets.zero,
-                                        border: InputBorder.none,
-                                        enabledBorder: InputBorder.none,
-                                        focusedBorder: InputBorder.none,
-                                        disabledBorder: InputBorder.none,
-                                        filled: false,
+                                        color: Colors.black87,
+                                        size: 20,
+                                      ),
+                                      label: const Text(
+                                        'Add another subject',
+                                        style: TextStyle(
+                                          fontFamily: 'CustomFont2',
+                                          fontSize: 12,
+                                          color: Colors.black87,
+                                        ),
+                                      ),
+                                      style: TextButton.styleFrom(
+                                        padding: const EdgeInsets.symmetric(vertical: 4.0),
+                                        minimumSize: Size.zero,
+                                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                                       ),
                                     ),
                                   ),
@@ -213,84 +221,13 @@ class _SubjectMenuState extends State<SubjectMenu> {
                               ),
                             ),
 
-                            // BOTTOM ROW: Subject Input Field placed right next to the 'Add Subject' button
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                // Subject Name Text Input Field (Appears right next to the button)
-                                Expanded(
-                                  child: Container(
-                                    height: 40,
-                                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                                    decoration: BoxDecoration(
-                                      color: Colors.black.withOpacity(0.05),
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    child: TextField(
-                                      controller: _subjectInputController,
-                                      textAlign: TextAlign.left,
-                                      style: const TextStyle(
-                                        fontFamily: 'CustomFont2',
-                                        fontSize: 13,
-                                        color: Colors.black,
-                                      ),
-                                      decoration: InputDecoration(
-                                        hintText: 'Subject Name...',
-                                        hintStyle: TextStyle(
-                                          fontFamily: 'CustomFont2',
-                                          fontSize: 11,
-                                          color: Colors.grey.shade600,
-                                        ),
-                                        border: InputBorder.none,
-                                        contentPadding: const EdgeInsets.symmetric(vertical: 10),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 10),
-                                // Add Subject Button
-                                GestureDetector(
-                                  behavior: HitTestBehavior.opaque,
-                                  onTap: () {
-                                    // You can include the subject name from _subjectInputController here if needed
-                                    _handleSubjectSubmit();
-                                  },
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 10,
-                                      horizontal: 14,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: Colors.black.withOpacity(0.08),
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    child: const Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Icon(
-                                          Icons.add_task,
-                                          size: 18,
-                                          color: Colors.black,
-                                        ),
-                                        SizedBox(width: 4),
-                                        Text(
-                                          'Add',
-                                          style: TextStyle(
-                                            fontFamily: 'CustomFont2',
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.black,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
+                            const SizedBox(height: 10),
+
+                            // 4. PINNED AT BOTTOM
+                            SubmitButton(onTap: _handleSubjectSubmit),
                           ],
                         ),
-                      ),
+                      )
                     ],
                   ),
                 ),
@@ -300,9 +237,7 @@ class _SubjectMenuState extends State<SubjectMenu> {
         Positioned(
           bottom: 0,
           right: 0,
-          child: AddButton(
-            onPressed: widget.onToggleMenu,
-          ),
+          child: AddButton(onPressed: widget.onToggleMenu),
         ),
       ],
     );
