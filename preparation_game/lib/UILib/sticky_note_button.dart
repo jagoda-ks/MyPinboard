@@ -34,7 +34,7 @@ class StickyNoteButton extends StatelessWidget {
                     colorFilter: isMarked
                         ? ColorFilter.mode(
                             const Color.fromARGB(255, 89, 13, 13)
-                                .withOpacity(0.4),
+                                .withValues(alpha: 0.4),
                             BlendMode.srcATop)
                         : null,
                   ),
