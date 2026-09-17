@@ -33,25 +33,33 @@ class _SubjectMenuState extends State<SubjectMenu> {
   void initState() {
     super.initState();
     _levelInputController = TextEditingController();
-    _resetState();
+    _subjectControllers = [TextEditingController()];
+    _levelInputController.text = (widget.currentHighestLevel + 1).toString();
   }
 
   @override
   void didUpdateWidget(covariant SubjectMenu oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.showOptions != oldWidget.showOptions && widget.showOptions) {
+    // Only reset when transitioning from closed to open
+    if (widget.showOptions && !oldWidget.showOptions) {
       _resetState();
     }
   }
 
   void _resetState() {
+    final oldControllers = List<TextEditingController>.from(_subjectControllers);
+
     setState(() {
       _isNewMode = true;
       _levelInputController.text = (widget.currentHighestLevel + 1).toString();
-      for (final controller in _subjectControllers) {
+      _subjectControllers = [TextEditingController()];
+    });
+
+    // Safely dispose old controllers after the active rebuild completes
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      for (final controller in oldControllers) {
         controller.dispose();
       }
-      _subjectControllers = [TextEditingController()];
     });
   }
 
@@ -66,28 +74,38 @@ class _SubjectMenuState extends State<SubjectMenu> {
 
     setState(() {
       _isNewMode = !_isNewMode;
-      _levelInputController.text = _isNewMode 
-          ? (widget.currentHighestLevel + 1).toString() 
-          : widget.currentHighestLevel.toString();
+      _levelInputController.text = _isNewMode
+          ? (widget.currentHighestLevel + 1).toString()
+          : '';
     });
   }
 
   void _addSubjectLine() {
-    setState(() => _subjectControllers.add(TextEditingController()));
+    if (_subjectControllers.length < 5) {
+      setState(() => _subjectControllers.add(TextEditingController()));
+    } else {
+      _showSnackbar('You can only add up to 5 subjects at once.');
+    }
   }
 
   void _removeSubjectLine(int index) {
     if (_subjectControllers.length > 1) {
       setState(() {
-        _subjectControllers[index].dispose();
-        _subjectControllers.removeAt(index);
+        final controllerToDispose = _subjectControllers.removeAt(index);
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          controllerToDispose.dispose();
+        });
       });
     }
   }
 
   void _handleSubjectSubmit() {
+    // 1. Remove keyboard focus before executing callbacks
+    FocusScope.of(context).unfocus();
+
     final cleanLevelText = _levelInputController.text.trim();
     final parsedLevel = int.tryParse(cleanLevelText);
+
     final subjectsToAdd = _subjectControllers
         .map((c) => c.text.trim())
         .where((text) => text.isNotEmpty)
@@ -100,9 +118,12 @@ class _SubjectMenuState extends State<SubjectMenu> {
 
     if (parsedLevel != null && parsedLevel >= 1) {
       if (!_isNewMode && parsedLevel > widget.currentHighestLevel) {
-        _showSnackbar('Please enter a valid level between 1 and ${widget.currentHighestLevel}');
+        _showSnackbar(
+          'Please enter a valid level between 1 and ${widget.currentHighestLevel}',
+        );
         return;
       }
+
       widget.onAddSubjectsToLevel(parsedLevel, subjectsToAdd);
       widget.onToggleMenu();
     } else {
@@ -140,7 +161,7 @@ class _SubjectMenuState extends State<SubjectMenu> {
               color: Colors.black26,
               alignment: Alignment.center,
               child: GestureDetector(
-                onTap: () {}, // Prevent taps from closing backdrop
+                onTap: () {},
                 child: SizedBox(
                   width: popupSize,
                   height: popupSize,
@@ -159,10 +180,8 @@ class _SubjectMenuState extends State<SubjectMenu> {
                           horizontal: 36.0,
                         ),
                         child: Column(
-                          // 1. Expand the column to fill the popup note's height
                           mainAxisSize: MainAxisSize.max,
                           children: [
-                            // 2. PINNED AT TOP
                             LevelHeaderRow(
                               isNewMode: _isNewMode,
                               hasLevels: widget.currentHighestLevel > 0,
@@ -171,8 +190,6 @@ class _SubjectMenuState extends State<SubjectMenu> {
                               onToggleMode: _toggleMode,
                             ),
                             const SizedBox(height: 2),
-
-                            // 3. MIDDLE AREA: Takes whatever space is left and scrolls inside
                             Expanded(
                               child: ListView(
                                 shrinkWrap: true,
@@ -188,46 +205,42 @@ class _SubjectMenuState extends State<SubjectMenu> {
                                       onRemove: () => _removeSubjectLine(index),
                                     );
                                   }),
-
-                                  // Add subject line button
-                                  Align(
-                                    alignment: Alignment.centerLeft,
-                                    child: TextButton.icon(
-                                      onPressed: _addSubjectLine,
-                                      icon: const Icon(
-                                        IconData(
-                                          0x002b,
-                                          fontFamily: 'CustomFont2'
-                                        ),
-                                        color: Colors.black87,
-                                        size: 20,
-                                      ),
-                                      label: const Text(
-                                        'Add another subject',
-                                        style: TextStyle(
-                                          fontFamily: 'CustomFont2',
-                                          fontSize: 12,
+                                  if (_subjectControllers.length < 5)
+                                    Align(
+                                      alignment: Alignment.centerLeft,
+                                      child: TextButton.icon(
+                                        onPressed: _addSubjectLine,
+                                        icon: const Icon(
+                                          IconData(
+                                            0x002b,
+                                            fontFamily: 'CustomFont2',
+                                          ),
                                           color: Colors.black87,
+                                          size: 20,
                                         ),
-                                      ),
-                                      style: TextButton.styleFrom(
-                                        padding: const EdgeInsets.symmetric(vertical: 4.0),
-                                        minimumSize: Size.zero,
-                                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                        label: const Text(
+                                          'Add another subject',
+                                          style: TextStyle(
+                                            fontFamily: 'CustomFont2',
+                                            fontSize: 12,
+                                            color: Colors.black87,
+                                          ),
+                                        ),
+                                        style: TextButton.styleFrom(
+                                          padding: const EdgeInsets.symmetric(vertical: 4.0),
+                                          minimumSize: Size.zero,
+                                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                        ),
                                       ),
                                     ),
-                                  ),
                                 ],
                               ),
                             ),
-
                             const SizedBox(height: 10),
-
-                            // 4. PINNED AT BOTTOM
                             SubmitButton(onTap: _handleSubjectSubmit),
                           ],
                         ),
-                      )
+                      ),
                     ],
                   ),
                 ),
