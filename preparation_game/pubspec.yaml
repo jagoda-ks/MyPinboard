@@ -97,6 +97,7 @@ flutter:
       - assets/images/frame.png
       - assets/images/add_button.png
       - assets/images/popup_note.png
+      - assets/images/bin.png
   fonts:
       - family: CustomFont  # This is the name you will use in your code
         fonts:
