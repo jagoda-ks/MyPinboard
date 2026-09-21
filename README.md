@@ -20,7 +20,7 @@ The Flutter project lives in [`preparation_game/`](preparation_game/).
 - **Drag and drop** in edit mode:
   - drop a note onto another note to **swap** them
   - drop it into a gap to **insert** it at that position (including another level)
-- **Delete** selected notes, or every note that shares the same text.
+- **Delete** selected notes, or every note that shares the same text, using the bin in the bottom-left of edit mode. Tap once to start, tap again to finish.
 - **Local save** of the title, levels, and notes on the device. Closing and reopening the app restores the last board.
 
 ## Screens
@@ -38,7 +38,7 @@ The Flutter project lives in [`preparation_game/`](preparation_game/).
 4. Enter one or more subject names and tap **Add Subjects**.
 5. Tap a note to rename it.
 6. Long-press a note to drag it: onto another note to swap, or onto a highlighted gap to insert.
-7. Tap **Delete**, mark notes, then confirm. If more than one note exists, you can remove only the marked ones or every note with matching text.
+7. Tap the **bin** (bottom-left) to start deleting, mark notes, then tap the bin again to finish. If more than one note exists, you can remove only the marked ones or every note with matching text.
 
 Panning the canvas is disabled while editing so drags go to the notes instead of the board.
 
@@ -67,7 +67,7 @@ MyPinboard/
     │   ├── UILib/             Pinboard widgets and controls
     │   └── utils/             Fonts, colors, Roman numerals
     ├── assets/
-    │   ├── images/            Board, frame, notes, pin, add button
+    │   ├── images/            Board, frame, notes, pin, add button, bin
     │   └── fonts/             Amatic SC, Oooh Baby
     └── test/                  Widget tests
 ```
