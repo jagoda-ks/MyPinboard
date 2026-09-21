@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:preparation_game/UILib/background_widget.dart';
 import 'package:preparation_game/UILib/button_builder.dart';
 import 'package:preparation_game/UILib/input_field.dart';
+import 'package:preparation_game/managers/board_storage.dart';
+import 'package:preparation_game/models/board_snapshot.dart';
 import 'progress_page.dart';
 
 class HomePage extends StatefulWidget {
@@ -53,14 +55,25 @@ class _HomePageState extends State<HomePage> {
                 const SizedBox(height: 24),
                 ButtonBuilder()
                     .withText("Let's begin")
-                    .onPressed(() {
+                    .onPressed(() async {
                       final String titleInput = _challengeController.text.trim();
-                      final String cleanTitle = titleInput.isNotEmpty ? titleInput : 'My Challenge';
+                      final String cleanTitle =
+                          titleInput.isNotEmpty ? titleInput : 'My Challenge';
+                      final snapshot = BoardSnapshot(
+                        title: cleanTitle,
+                        subjectsByLevel: [[]],
+                      );
 
-                      Navigator.push(
+                      await BoardStorage().save(snapshot);
+                      if (!context.mounted) return;
+
+                      Navigator.pushReplacement(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => ProgressPage(challengeTitle: cleanTitle),
+                          builder: (context) => ProgressPage(
+                            challengeTitle: snapshot.title,
+                            initialSubjects: snapshot.subjectsByLevel,
+                          ),
                         ),
                       );
                     })
