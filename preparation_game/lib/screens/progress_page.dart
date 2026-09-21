@@ -346,8 +346,8 @@ class _ProgressPageState extends State<ProgressPage> {
           ),
           if (_isEditMode)
             Positioned(
-              bottom: 30,
-              left: 20,
+              bottom: 0,
+              left: 0,
               child: DeleteButton(
                 isDeleting: _isDeleting,
                 enabled: _subjectsByLevel.any((l) => l.isNotEmpty),
